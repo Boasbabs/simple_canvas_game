@@ -17,6 +17,8 @@ bgImage.onload = function() {
 bgImage.src = "images/background.png";
 
 // Game objects
+// Hero and Monster
+
 var hero = {
   speed: 256, // movement in pixels per second
   x: 0,
@@ -29,13 +31,115 @@ var monster = {
 };
 var monstersCaught = 0;
 
+// Hero image
+var heroReady = false;
+var heroImage = new Image();
+heroImage.onload = function () {
+	heroReady = true;
+};
+heroImage.src = "images/hero.png";
+
+// Monster image
+var monsterReady = false;
+var monsterImage = new Image();
+monsterImage.onload = function () {
+	monsterReady = true;
+};
+monsterImage.src = "images/monster.png";
+
 // Player Input: Handle keyboard controls
 var keysDown = {};
 
-addEventListerner("keydown", function(e) {
+addEventListener("keydown", function(e) {
   keysDown[e.keyCode] = true;
 }, false);
 
-addEventListerner("keyup", function(e) {
+addEventListener("keyup", function(e) {
   delete keysDown[e.keyCode];
 }, false);
+
+// New Game
+// Reset the game when the player catches a monster
+
+var reset = function () {
+  hero.x = canvas.width / 2;
+  hero.y = canvas.height / 2;
+
+  // Throw the monster somwhere on the screen randomly
+  monster.x = 32 + (Math.random() * (canvas.width - 64));
+  monster.y = 32 + (Math.random() * (canvas.height - 64));
+};
+
+// Update Game objects
+var update = function (modifier) {
+  if (38 in keysDown) { // Player holding up
+    hero.y -= hero.speed * modifier;
+  }
+  if (40 in keysDown) { // Player holding down
+    hero.y += hero.speed * modifier;
+  }
+  if (37 in keysDown) { // Player holding left
+    hero.x -= hero.speed * modifier;
+  }
+  if (39 in keysDown) { // Player holding right
+    hero.x += hero.speed * modifier;
+  }
+
+  // Are they touching?
+  if (
+    hero.x <= (monster.x + 32)
+    && monster.x <= (hero.x + 32)
+    && hero.y <= (monster.y + 32)
+    && monster.y <= (hero.y + 32)
+  ) {
+    ++monstersCaught;
+    reset();
+  }
+};
+
+// Render objects
+// Draw everything
+var render = function () {
+  if (bgReady) {
+    ctx.drawImage(bgImage, 0, 0);
+  }
+
+  if (heroReady) {
+    ctx.drawImage(heroImage, hero.x, hero.y);
+  }
+
+  if (monsterReady) {
+    ctx.drawImage(monsterImage, monster.x, monster.y);
+  }
+
+  // Score
+  ctx.fillStyle = "rgb(250, 250, 250)";
+  ctx.font = "20px Helvetica";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText("Monsters caught: " + monstersCaught, 32, 32);
+};
+
+// the MAIN Game loop
+var main = function () {
+  var now = Date.now();
+  var delta = now - then;
+
+  update(delta / 1000);
+  render();
+
+  then = now;
+
+  // Request to this again ASAP
+  requestAnimationFrame(main);
+};
+
+
+// Cross-browser support for requestAnimationFrame
+var w = window;
+requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame || w.msRequestAnimationFrame || w.mozRequestAnimationFrame;
+
+// Let's play the Game!
+var then = Date.now();
+reset();
+main();
